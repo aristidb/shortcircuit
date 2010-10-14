@@ -1,75 +1,90 @@
 module Control.Shortcircuit
 (
-  ExclusiveZero(..)
-, ExclusiveMonoid(..)
-, firstOf
-, EitherSum(..)
-, monadZero
-, monadIsValid
-, monadOrElse
-, monadFirstOf
+  HasFalse(..)
+, HasTrue(..)
+, Shortcircuit(..)
+, isFalse
+, if'
+, unless'
+, (??)
+, (||)
+, (&&)
+, firstTrueOf
+, lastFalseOf
+, orM
+, andM
+, firstTrueOfM
+, lastFalseOfM
 )
 where
   
 import Control.Monad
+import Control.Monad.Instances ()
 import Data.Maybe
-import Data.Monoid
+import Prelude hiding ((||), (&&))
 
-class ExclusiveZero a where
-    zero :: a
+class HasFalse a where
+    false :: a
 
-class ExclusiveMonoid a where
-    isValid :: a -> Bool
-    orElse :: a -> a -> a
+class HasTrue a where
+    true :: a
 
-firstOf :: (ExclusiveZero a, ExclusiveMonoid a) => [a] -> a
-firstOf = foldr orElse zero
+class Shortcircuit a where
+    isTrue :: a -> Bool
 
-instance ExclusiveZero Bool where
-    zero = False
+isFalse :: (Shortcircuit a) => a -> Bool
+isFalse = not . isTrue
 
-instance ExclusiveMonoid Bool where
-    isValid = (== True)
-    orElse = (||)
+if' :: (Shortcircuit a) => a -> b -> b -> b
+if' x a b | isTrue x  = a
+          | otherwise = b
 
-instance ExclusiveZero (Maybe a) where
-    zero = Nothing
+unless' :: (Shortcircuit a) => a -> b -> b -> b
+unless' x a b | isFalse x = a
+              | otherwise = b
 
-instance ExclusiveMonoid (Maybe a) where
-    isValid = isJust
-    orElse = mplus
+(??) :: (Shortcircuit a) => b -> b -> a -> b
+a ?? b = \x -> if' x a b
 
-instance ExclusiveMonoid (Either a b) where
-    isValid (Right _) = True
-    isValid (Left _)  = False
-    orElse a@(Left _)    (Left _)  = a
-    orElse   (Left _)  b@(Right _) = b
-    orElse a@(Right _)   _         = a
+(||) :: (Shortcircuit a) => a -> a -> a
+(||) = join if'
 
-newtype EitherSum a b = EitherSum { unEitherSum :: Either a b }
+(&&) :: (Shortcircuit a) => a -> a -> a
+(&&) = join unless'
 
-instance Monoid a => ExclusiveZero (EitherSum a b) where
-    zero = EitherSum $ Left mempty
+firstTrueOf :: (Shortcircuit a, HasFalse a) => [a] -> a
+firstTrueOf = foldr (||) false
 
-instance Monoid a => ExclusiveMonoid (EitherSum a b) where
-    isValid (EitherSum x) = isValid x
-    orElse (EitherSum x) (EitherSum y) = EitherSum $ orElse' x y
-        where
-          orElse'   (Left a)    (Left b)  = Left (a `mappend` b)
-          orElse'   (Left _)  b@(Right _) = b
-          orElse' a@(Right _)   _         = a
+lastFalseOf :: (Shortcircuit a, HasTrue a) => [a] -> a
+lastFalseOf = foldr (&&) true
 
-monadZero :: (Monad m, ExclusiveZero a) => m a
-monadZero = return zero
+orM :: (Monad m, Shortcircuit a) => m a -> m a -> m a
+orM a b = a >>= \x -> (return x ?? b) x
 
-monadIsValid :: (Monad m, ExclusiveMonoid a) => m a -> m Bool
-monadIsValid = liftM isValid
+andM :: (Monad m, Shortcircuit a) => m a -> m a -> m a
+andM a b = a >>= \x -> (b ?? return x) x
 
-monadOrElse :: (Monad m, ExclusiveMonoid a) => m a -> m a -> m a
-monadOrElse a b = a >>= \x -> if isValid x then return x else b
+firstTrueOfM :: (Monad m, Shortcircuit a, HasFalse a) => [m a] -> m a
+firstTrueOfM = foldr orM (return false)
 
-monadFirstOf :: (Monad m
-                , ExclusiveZero a
-                , ExclusiveMonoid a) 
-                => [m a] -> m a
-monadFirstOf = foldr monadOrElse monadZero
+lastFalseOfM :: (Monad m, Shortcircuit a, HasTrue a) => [m a] -> m a
+lastFalseOfM = foldr andM (return true)
+
+instance HasTrue Bool where
+    true = True
+
+instance HasFalse Bool where
+    false = False
+
+instance Shortcircuit Bool where
+    isTrue = (== True)
+
+instance HasFalse (Maybe a) where
+    false = Nothing
+
+instance Shortcircuit (Maybe a) where
+    isTrue = isJust
+
+instance Shortcircuit (Either a b) where
+    isTrue (Left _)  = False
+    isTrue (Right _) = True
