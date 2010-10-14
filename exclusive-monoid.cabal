@@ -13,7 +13,7 @@ Version:             0.1
 Synopsis:            Exclusive, short-circuit monoids
 
 -- A longer description of the package.
--- Description:         
+Description:         Exclusive, short-circuiting monoids. These monoids follow the monoid laws, but additionally they are short-circuiting. So, a `orElse` b = a if a is valid.
 
 -- The license under which the package is released.
 License:             BSD3
@@ -29,7 +29,7 @@ Author:              Aristid Breitkreuz
 Maintainer:          aristidb@googlemail.com
 
 -- A copyright notice.
--- Copyright:           
+Copyright:           Copyright (C) 2010 Aristid Breitkreuz
 
 Category:            Data
 
@@ -37,7 +37,7 @@ Build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or
 -- a README.
--- Extra-source-files:  
+Extra-source-files:  README
 
 -- Constraint on the version of Cabal needed to build this package.
 Cabal-version:       >=1.8
@@ -51,6 +51,8 @@ Library
   Build-depends:
                        base >=4.2 && <5,
                        monadLib ==3.6.*
+
+  GHC-Options:         -Wall
   
   -- Modules not exported by this package.
   -- Other-modules:       
