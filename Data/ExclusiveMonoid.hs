@@ -1,4 +1,14 @@
 module Data.ExclusiveMonoid
+(
+  ExclusiveZero(..)
+, ExclusiveMonoid(..)
+, firstOf
+, EitherSum(..)
+, monadZero
+, monadIsValid
+, monadOrElse
+, monadFirstOf
+)
 where
   
 import Control.Monad
