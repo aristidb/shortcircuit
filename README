@@ -1,1 +1,1 @@
-Exclusive, short-circuiting monoids. These monoids follow the monoid laws, but additionally they are short-circuiting. So, a `orElse` b = a if a is valid.
+Classes and functions for short-circuit values and expressions.

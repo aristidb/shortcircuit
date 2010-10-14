@@ -1,4 +1,4 @@
-module Data.ExclusiveMonoid
+module Control.Shortcircuit
 (
   ExclusiveZero(..)
 , ExclusiveMonoid(..)
